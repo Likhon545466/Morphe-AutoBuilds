@@ -562,8 +562,6 @@ def _pick_recommended_target(patches_json: dict, package_name: str) -> str:
 
     if stable:
         return provider_utils.get_highest_version(stable) or ""
-    if any_kind:
-        return provider_utils.get_highest_version(any_kind) or ""
     return ""
 
 
@@ -826,6 +824,9 @@ def plan_incremental(full_matrix: List[dict], old_manifest: Optional[dict],
                     # rather than trusting the (possibly stale) stored value.
                     old_built_ver = extract_version_from_filename(recovered)
 
+        if not old_built_ver and carried_apk:
+            old_built_ver = extract_version_from_filename(carried_apk)
+
         new_entries[mkey] = {
             "app_name": app,
             "source": src,
@@ -850,6 +851,8 @@ def plan_incremental(full_matrix: List[dict], old_manifest: Optional[dict],
                 reasons.append(f"app-version: {old.get('config_version','')!r}->{cur_app_ver!r}")
             if old.get("source_sig", "") != cur_src_sig:
                 reasons.append("patch-source-updated")
+            if not old.get("built_version", ""):
+                reasons.append("legacy-manifest-missing-built-version")
             # New app version detection for apps pinned to "latest" (no pinned
             # config version). When config_version is empty, the config_version
             # compare above can never fire.
